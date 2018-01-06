@@ -4,6 +4,8 @@ Implementation of Deep Q Learning algorithm in the Atari environments, as public
 
 ## Algorithm
 
-__Deep Q-Learning with Experience Replay__
-![](pseudocode.png)
-Taken from [Human-level control through deep reinforcement learning](https://www.nature.com/articles/nature14236) 
+### __Deep Q-Learning with Experience Replay__
+
+<img src="pseudocode.png" width="700">
+
+Taken from the original paper: [Human-level control through deep reinforcement learning](https://www.nature.com/articles/nature14236) 
