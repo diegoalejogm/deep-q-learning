@@ -1,6 +1,9 @@
 import torch
 from torch import nn
 
+import copy
+import utils
+
 
 class DeepQNetwork(nn.Module):
 
@@ -26,6 +29,9 @@ class DeepQNetwork(nn.Module):
             nn.Linear(512, num_actions),
             nn.ReLU()
         )
+        # Init with cuda if available
+        if torch.cuda.is_available():
+            self.cuda()
 
     def forward(self, x):
         x = self.conv1(x)
@@ -36,3 +42,18 @@ class DeepQNetwork(nn.Module):
         x = self.out(x)
 #         print(x.size())
         return x
+
+
+def save_checkpoint(model, episode, ):
+    # Make Dir
+    out_dir = 'data/models'
+    utils.make_dir(out_dir)
+    # Save model
+    torch.save(model.state_dict(), '{}/episode_{}'.format(out_dir, episode))
+
+
+def update_target(Q):
+    q2 = copy.deepcopy(Q)
+    if torch.cuda.is_available():
+        return q2.cuda()
+    return q2
