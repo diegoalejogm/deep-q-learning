@@ -66,7 +66,7 @@ class ReplayMemory():
     def save(self, size):
         # Create out dir
         utils.make_dir(DATA_DIR)
-        #
+        print('Saving Memory data into Replay Memory Instance...')
         # Save property dict
         with open('{}/properties.json'.format(DATA_DIR), 'w') as f:
             json.dump(self.to_dict(size), f)

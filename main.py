@@ -1,7 +1,7 @@
 import utils
 import nets
 from logger import Logger
-
+from PIL import Image
 import gym
 
 import numpy as np
@@ -35,7 +35,7 @@ def e_greedy_action(Q, phi, env, step):
     initial_epsilon, final_epsilon = 1.0, .1
     min_eps = 0.1
     # Decay steps
-    decay_steps = float(1e7)
+    decay_steps = float(1e6)
     # Calculate annealed epsilon
     step_size = (initial_epsilon - final_epsilon) / decay_steps
     ann_eps = initial_epsilon - step * step_size
@@ -45,22 +45,22 @@ def e_greedy_action(Q, phi, env, step):
     rand = np.random.uniform()
     # With probability e select random action a_t
     if rand < epsilon:
-        return env.action_space.sample()
+        return env.action_space.sample(), epsilon
 
     else:
         # Otherwise select a_t = argmax_a Q(phi, a)
         phi = to_variable(phi)
-        return Q(phi).max(1)[1].data
+        return Q(phi).max(1)[1].data, epsilon
 
 
 def approximate_targets(phi_plus1_mb, r_mb, done_mb, Q_, gamma=0.99):
     '''
     gamma: future reward discount factor
     '''
-    max_Q, argmax_a = Q_(to_variable(phi_plus1_mb)).detach().max(1)
+    max_Q, argmax_a = Q_(to_variable(phi_plus1_mb)).max(1)
     # 0 if ep. teriminates at step j+1, 1 otherwise
-    terminates = to_variable(1 - done_mb)
-    return to_variable(r_mb) + (gamma * max_Q) * terminates
+    terminates = to_variable(0 + done_mb)
+    return to_variable(r_mb) + (gamma * max_Q) * (1 - terminates)
 
 
 def gradient_descent(optimizer, y, Q, phi_mb, action_mb, mb_size):
@@ -69,12 +69,19 @@ def gradient_descent(optimizer, y, Q, phi_mb, action_mb, mb_size):
 
     # Calculate Q(phi) of actions in [action_mb]
     q_phi = Q(to_variable(phi_mb))[np.arange(mb_size), action_mb]
+    # for i in range(4):
+    #     img = Image.fromarray(phi_mb[0, i, :, :])
+    #     img.show()
+    # print(Q(to_variable(phi_mb))[:5])
+    # print(action_mb[:5])
+    # print(q_phi[:5])
+    # raw_input()
 
     # Run backward pass
-    error = (q_phi - y)
+    error = (y - q_phi)
     # Clip error to range [-1, 1]
     error = torch.clamp(error, min=-1, max=1)
-    error = error
+    error = error**2
     error = error.sum()
     error.backward()
 
@@ -116,6 +123,18 @@ optimizer = optim.RMSprop(
     Q.parameters(), lr=0.00025, momentum=0.95, alpha=0.95, eps=.01
 )
 
+
+def print_nets(Q1, Q2, step):
+    with open('./Q1_params_{}.txt'.format(step), 'w') as f:
+        for parameter in Q1.parameters():
+            f.write(parameter.__str__())
+
+    with open('./Q2_params_{}.txt'.format(step), 'w') as f:
+        for parameter in Q2.parameters():
+            f.write(parameter.__str__())
+
+
+# print_nets(Q, Q_, step)
 # Initialize sequence s1 = {x1} and preprocessed sequence phi = phi(s1)
 H = initial_history(env)
 
@@ -124,25 +143,31 @@ for ep in range(params['num_episodes']):
     phi = phi_map(H.get())
 
     for _ in range(params['max_episode_length']):
-        env.render(mode='human')
+        # env.render(mode='human')
         step += 1
         # Select action
-        action = e_greedy_action(Q, phi, env, step)
+        action, epsilon = e_greedy_action(Q, phi, env, step)
+        log.epsilon(epsilon)
         # Execute action a_t in emulator and observe reward r_t and image x_(t+1)
         image, reward, done, _ = env.step(action)
         # Set s_(t+1) = s_t, a_t, x_(t+1) and preprocess phi_(t+1) =  phi_map( s_(t+1) )
         H.add(image)
         phi_prev, phi = phi, phi_map(H.get())
+        # img = Image.fromarray(phi[0, 3, :, :])
+        # img.show()
+        # raw_input()
         # Store transition (phi_t, a_t, r_t, phi_(t+1)) in D
         D.add((phi_prev, action, reward, phi, done))
 
-        should_train_model = step > 30  # (step > params['min_steps_train']) and \
-        #D.can_sample(MINIBATCH_SIZE) and (t % params['train_freq'] == 0)
+        should_train_model = skip_fill_memory or \
+            ((step > params['min_steps_train']) and
+             D.can_sample(params['minibatch_size']) and
+             (step % params['train_freq'] == 0))
 
         if should_train_model:
             if not (skip_fill_memory or has_trained_model):
                 D.save(params['min_steps_train'])
-                has_trained_model = True
+            has_trained_model = True
 
             # Sample random minibatch of transitions ( phi_j, a_j, r_j, phi_(j+1)) from D
             phi_mb, a_mb, r_mb, phi_plus1_mb, done_mb = D.sample(
@@ -152,16 +177,20 @@ for ep in range(params['num_episodes']):
             # Perform a gradient descent step on ( y_j - Q(phi_j, a_j) )^2
             q_phi, loss = gradient_descent(optimizer, y, Q,
                                            phi_mb, a_mb, params['minibatch_size'])
+            log.q_loss(q_phi, loss)
             # Reset Q_
             if step % params['target_update_freq'] == 0:
                 Q_ = nets.update_target(Q)
 
-            log.update(reward, q_phi, loss)
+        log.episode(reward)
 
+        log.display()
         # Restart game if done
         if done:
             H.add(env.reset()[0])
+            log.reset_episode()
 
     if ep % 25 == 0:
         nets.save_checkpoint(Q, ep)
+
 writer.close()
