@@ -2,12 +2,11 @@ import numpy as np
 import json
 import utils
 
-DATA_DIR = 'data/replay'
-
 
 class ReplayMemory():
 
-    def __init__(self, N, load_existing, image_shape=(4, 84, 84)):
+    def __init__(self, N, load_existing, data_dir, image_shape=(4, 84, 84)):
+        self.data_dir = '{}/replay'.format(data_dir)
         self.memory_size = N
         # Next position in arrays to be used
         self.index = 0
@@ -65,37 +64,38 @@ class ReplayMemory():
 
     def save(self, size):
         # Create out dir
-        utils.make_dir(DATA_DIR)
+        utils.make_dir(self.data_dir)
         print('Saving Memory data into Replay Memory Instance...')
         # Save property dict
-        with open('{}/properties.json'.format(DATA_DIR), 'w') as f:
+        with open('{}/properties.json'.format(self.data_dir), 'w') as f:
             json.dump(self.to_dict(size), f)
         # Save arrays
-        np.save('{}/phi_t'.format(DATA_DIR), self.phi_t[:size])
-        np.save('{}/action'.format(DATA_DIR), self.action[:size])
-        np.save('{}/reward'.format(DATA_DIR), self.reward[:size])
-        np.save('{}/phi_t_plus1'.format(DATA_DIR), self.phi_t_plus1[:size])
-        np.save('{}/terminates'.format(DATA_DIR), self.terminates[:size])
+        np.save('{}/phi_t'.format(self.data_dir), self.phi_t[:size])
+        np.save('{}/action'.format(self.data_dir), self.action[:size])
+        np.save('{}/reward'.format(self.data_dir), self.reward[:size])
+        np.save('{}/phi_t_plus1'.format(self.data_dir),
+                self.phi_t_plus1[:size])
+        np.save('{}/terminates'.format(self.data_dir), self.terminates[:size])
 
     def load(self):
         # Create out dir
-        utils.make_dir(DATA_DIR)
+        utils.make_dir(self.data_dir)
         try:
             print('Loading Memory data into Replay Memory Instance...')
             # Load property list
-            d = json.load(open('{}/properties.json'.format(DATA_DIR)))
+            d = json.load(open('{}/properties.json'.format(self.data_dir)))
             self.from_dict(d)
             # Load numpy arrays
             self.phi_t[:self.last_saved_size] = np.load(
-                '{}/phi_t.npy'.format(DATA_DIR))
+                '{}/phi_t.npy'.format(self.data_dir))
             self.action[:self.last_saved_size] = np.load(
-                '{}/action.npy'.format(DATA_DIR))
+                '{}/action.npy'.format(self.data_dir))
             self.reward[:self.last_saved_size] = np.load(
-                '{}/reward.npy'.format(DATA_DIR))
+                '{}/reward.npy'.format(self.data_dir))
             self.phi_t_plus1[:self.last_saved_size] = np.load(
-                '{}/phi_t_plus1.npy'.format(DATA_DIR))
+                '{}/phi_t_plus1.npy'.format(self.data_dir))
             self.terminates[:self.last_saved_size] = np.load(
-                '{}/terminates.npy'.format(DATA_DIR))
+                '{}/terminates.npy'.format(self.data_dir))
         except IOError as e:
             self.__init__(self.memory_size, load_existing=False)
             print("I/O error({0}): {1}".format(e.errno, e.strerror))

@@ -6,6 +6,8 @@ import gym
 
 import numpy as np
 
+import tensorflow as tf
+
 import torch
 from torch import nn, optim
 from torch.autograd import Variable
@@ -91,6 +93,27 @@ def gradient_descent(optimizer, y, Q, phi_mb, action_mb, mb_size):
     return q_phi, error
 
 
+# FLAGS
+flags = tf.app.flags
+flags.DEFINE_boolean(
+    'floyd', False, 'Use directory structure for deploying in FloydHub')
+flags.DEFINE_string(
+    'data_dir', './data', 'Default output data directory')
+flags.DEFINE_string(
+    'log_dir', './run', 'Default tensorboard data directory')
+flags.DEFINE_string(
+    'in_dir', './data', 'Default input data directory')
+FLAGS = flags.FLAGS
+##
+
+# Reformat directories if using FloydHub directory structure
+if FLAGS.floyd:
+    FLAGS.data_dir = '/output'
+    FLAGS.log_dir = '/output'
+    FLAGS.in_dir = ''
+
+# ----------------------------------
+
 # Tranining
 env = gym.make('Pong-v0')
 # Current iteration
@@ -99,7 +122,7 @@ step = 0
 has_trained_model = False
 # Init training params
 params = {
-    'num_episodes': 100,
+    'num_episodes': 1000,
     'minibatch_size': 32,
     'max_episode_length': int(10e6),  # T
     'memory_size': int(1e6),  # N
@@ -110,30 +133,20 @@ params = {
     'min_steps_train': 50000
 }
 # Initialize Logger
-log = Logger()
+log = Logger(log_dir=FLAGS.log_dir)
 # Initialize replay memory D to capacity N
-D = ReplayMemory(params['memory_size'], load_existing=True)
+D = ReplayMemory(params['memory_size'],
+                 load_existing=True, data_dir=FLAGS.in_dir)
 skip_fill_memory = D.count > 0
 # Initialize action-value function Q with random weights
 Q = DeepQNetwork(params['num_actions'])
+log.network(Q)
 # Initialize target action-value function Q^ with weights
 Q_ = nets.update_target(Q)
 # Init network optimizer
 optimizer = optim.RMSprop(
     Q.parameters(), lr=0.00025, momentum=0.95, alpha=0.95, eps=.01
 )
-
-
-def print_nets(Q1, Q2, step):
-    with open('./Q1_params_{}.txt'.format(step), 'w') as f:
-        for parameter in Q1.parameters():
-            f.write(parameter.__str__())
-
-    with open('./Q2_params_{}.txt'.format(step), 'w') as f:
-        for parameter in Q2.parameters():
-            f.write(parameter.__str__())
-
-
 # print_nets(Q, Q_, step)
 # Initialize sequence s1 = {x1} and preprocessed sequence phi = phi(s1)
 H = initial_history(env)
@@ -141,6 +154,10 @@ H = initial_history(env)
 for ep in range(params['num_episodes']):
 
     phi = phi_map(H.get())
+
+    if (ep % 10) == 0:
+        print('ENTRA', ep)
+        nets.save_checkpoint(Q, ep, out_dir=FLAGS.data_dir)
 
     for _ in range(params['max_episode_length']):
         # env.render(mode='human')
@@ -178,19 +195,17 @@ for ep in range(params['num_episodes']):
             q_phi, loss = gradient_descent(optimizer, y, Q,
                                            phi_mb, a_mb, params['minibatch_size'])
             log.q_loss(q_phi, loss)
+            # log.network(Q)
             # Reset Q_
             if step % params['target_update_freq'] == 0:
                 Q_ = nets.update_target(Q)
 
         log.episode(reward)
-
         log.display()
         # Restart game if done
         if done:
             H.add(env.reset()[0])
             log.reset_episode()
-
-    if ep % 25 == 0:
-        nets.save_checkpoint(Q, ep)
+            break
 
 writer.close()

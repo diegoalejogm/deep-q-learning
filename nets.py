@@ -22,16 +22,17 @@ class DeepQNetwork(nn.Module):
             nn.ReLU()
         )
         self.hidden = nn.Sequential(
-            nn.Linear(64 * 7 * 7, 512),
+            nn.Linear(64 * 7 * 7, 512, bias=True),
             nn.ReLU()
         )
         self.out = nn.Sequential(
-            nn.Linear(512, num_actions),
+            nn.Linear(512, num_actions, bias=True),
             nn.ReLU()
         )
         # Init with cuda if available
         if torch.cuda.is_available():
             self.cuda()
+        self.apply(weights_init)
 
     def forward(self, x):
         x = self.conv1(x)
@@ -43,12 +44,23 @@ class DeepQNetwork(nn.Module):
         return x
 
 
-def save_checkpoint(model, episode, ):
+def save_checkpoint(model, episode, out_dir):
+    out_dir = '{}/models'.format(out_dir)
     # Make Dir
-    out_dir = 'data/models'
     utils.make_dir(out_dir)
     # Save model
     torch.save(model.state_dict(), '{}/episode_{}'.format(out_dir, episode))
+
+
+def weights_init(m):
+    classname = m.__class__.__name__
+    if classname.find('Conv') != -1:
+        m.weight.data.normal_(0.0, 0.01)
+        # nn.init.xavier_uniform(m.weight)
+    if classname.find('Linear') != -1:
+        m.weight.data.normal_(0.0, 0.01)
+        # nn.init.xavier_uniform(m.weight)
+        # m.weight.data.normal_(0.0, 0.008)
 
 
 def update_target(Q):
