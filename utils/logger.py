@@ -37,11 +37,11 @@ class Logger:
     def q_loss(self, q, loss):
         self.update_count += 1
 
-        self.mb_loss = loss.data.cpu().numpy()
-        self.mb_q = q.sum().data.cpu().numpy() / int(q.size()[0])
+        self.mb_loss = loss.data.cpu().sum()
+        self.mb_q = q.sum().data.cpu().sum() / int(q.size()[0])
 
-        self.total_q += self.mb_q[0]
-        self.total_loss += self.mb_loss[0]
+        self.total_q += self.mb_q
+        self.total_loss += self.mb_loss
 
         avg_loss = self.total_loss / self.update_count
         avg_q = self.total_q / self.update_count
@@ -65,8 +65,8 @@ class Logger:
             'Episode Avg. Reward': sum(self.ep_rewards) / float(len(self.ep_rewards)),
             'Episode Min. Reward': self.ep_min_reward,
             'Episode Max. Reward': self.ep_max_reward,
-            'Minibatch Loss': self.mb_loss[0],
-            'Minibatch Q': self.mb_q[0],
+            'Minibatch Loss': self.mb_loss,
+            'Minibatch Q': self.mb_q,
             'Epsilon': self.epsilon_val
         }
         print('-------')

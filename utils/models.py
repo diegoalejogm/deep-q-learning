@@ -2,6 +2,9 @@ import numpy as np
 import json
 import utils
 
+import torch
+from torch.autograd import Variable
+
 
 class ReplayMemory():
 
@@ -43,21 +46,36 @@ class ReplayMemory():
         '''
         This operation adds a new experience e, replacing the earliest experience if full.
         '''
-        self.phi_t[self.index] = experience[0]
+        self.phi_t[self.index] = experience[0].data.numpy()
+        # print(self.phi_t[self.index])
         self.action[self.index] = experience[1]
         self.reward[self.index] = experience[2]
-        self.phi_t_plus1[self.index] = experience[3]
+        self.phi_t_plus1[self.index] = experience[3].data.numpy()
         self.terminates[self.index] = experience[4]
 
         # Update value of next index
         self.index = (self.index + 1) % self.memory_size
         self.count = min(self.count + 1, self.memory_size)
 
-    def sample(self, size):
+    def sample(self, size, as_var=True):
         idxs = np.random.choice(self.count, size)
-        return self.phi_t[idxs].astype(np.float32), self.action[idxs], \
-            self.reward[idxs], self.phi_t_plus1[idxs].astype(np.float32), \
-            self.terminates[idxs]
+        # Obtain arrays
+        phi = self.phi_t[idxs].astype(np.float32)
+        actions = self.action[idxs].astype(np.float32)
+        rewards = self.reward[idxs].astype(np.float32)
+        next_phi = self.phi_t_plus1[idxs].astype(np.float32)
+        terminate = (self.terminates[idxs] + 0).astype(np.float32)
+
+        # Convert to pytorch
+        if as_var:
+            phi = Variable(torch.from_numpy(phi)).float()
+            actions = Variable(torch.from_numpy(actions)).long()
+            rewards = Variable(torch.from_numpy(rewards)).float()
+            next_phi = Variable(torch.from_numpy(next_phi)).float().detach()
+            terminate = Variable(torch.from_numpy(terminate)).float()
+
+        # Return arrays
+        return phi, actions, rewards, next_phi, terminate
 
     def can_sample(self, size):
         return self.count >= size
@@ -70,9 +88,9 @@ class ReplayMemory():
         with open('{}/properties.json'.format(self.data_dir), 'w') as f:
             json.dump(self.to_dict(size), f)
         # Save arrays
-        np.save('{}/phi_t'.format(self.data_dir), self.phi_t[:size])
-        np.save('{}/action'.format(self.data_dir), self.action[:size])
-        np.save('{}/reward'.format(self.data_dir), self.reward[:size])
+        np.save('{}/phi_t'.format(self.data_dir), self.phi_t[: size])
+        np.save('{}/action'.format(self.data_dir), self.action[: size])
+        np.save('{}/reward'.format(self.data_dir), self.reward[: size])
         np.save('{}/phi_t_plus1'.format(self.data_dir),
                 self.phi_t_plus1[:size])
         np.save('{}/terminates'.format(self.data_dir), self.terminates[:size])
@@ -108,8 +126,8 @@ class ReplayMemory():
 
 class History():
 
-    def __init__(self):
-        self.length = 4
+    def __init__(self, length=4):
+        self.length = length
         self.list = []
 
     def add(self, ex):
@@ -125,3 +143,11 @@ class History():
 
     def get(self):
         return self.list
+
+    @staticmethod
+    def initial(env):
+        s = env.reset()[0]
+        H = History()
+        for _ in range(H.length):
+            H.add(s)
+        return H

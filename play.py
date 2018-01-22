@@ -22,6 +22,7 @@ def to_variable(arr):
 def greedy_action(Q, phi):
     # Otherwise select a_t = argmax_a Q(phi, a)
     phi = to_variable(phi)
+    print(phi)
     print(Q(phi))
     return Q(phi).max(1)[1].data
 
@@ -39,16 +40,18 @@ def initial_history(env):
 env = gym.make('Pong-v0')
 H = initial_history(env)
 Q = DeepQNetwork(6)
-Q.load_state_dict(torch.load('data/models/episode_50.txt',
+Q.load_state_dict(torch.load('data/models/episode_10',
                              map_location=lambda storage, loc: storage))
+
+print(Q.state_dict())
+# raw_input()
 
 while(True):
     env.render(mode='human')
     phi = phi_map(H.get())
     action = greedy_action(Q, phi)
-    raw_input()
+    # raw_input()
     image, reward, done, _ = env.step(action)
     H.add(image)
-    phi_prev, phi = phi, phi_map(H.get())
     if done:
         H.add(env.reset()[0])

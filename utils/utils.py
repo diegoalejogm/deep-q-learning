@@ -1,5 +1,6 @@
 import os
 import errno
+import torch
 
 
 def clear_terminal_output():
