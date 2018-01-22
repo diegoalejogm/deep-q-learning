@@ -92,9 +92,9 @@ def gradient_descent(y, q, optimizer):
     error = error.clamp(min=-1, max=1)
     # Square error
     error = error**2
-    # error = error.sum()
-    q.backward(error.data)
-    # error.backward()
+    error = error.sum()
+    # q.backward(error.data)
+    error.backward()
 
     # Perfom the update
     optimizer.step()

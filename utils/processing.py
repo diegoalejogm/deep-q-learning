@@ -27,7 +27,7 @@ def phi_map(image_list, as_var=True):
 
     # Convert to Variable
     if as_var:
-        arr = Variable(torch.from_numpy(arr)).float()
+        arr = Variable(torch.from_numpy(arr)).float().cuda()
     return arr
 
 

@@ -18,7 +18,7 @@ def e_greedy_action(Q, phi, env, step):
     # Obtain a random value in range [0,1)
     rand = np.random.uniform()
 
-    print(Q(phi))
+    # print(Q(phi))
 
     # With probability e select random action a_t
     if rand < epsilon:

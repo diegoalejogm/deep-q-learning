@@ -1,20 +1,12 @@
 import gym
+import tensorflow as tf
+from torch import optim
 
 from utils.learn import e_greedy_action
 from utils.logger import Logger
 from utils.models import ReplayMemory, History
 from utils.net import DeepQNetwork, Q_targets, Q_values, save_network, copy_network, gradient_descent
 from utils.processing import phi_map, tuple_to_numpy
-
-# from PIL import Image
-
-
-# import numpy as np
-
-import tensorflow as tf
-
-# import torch
-from torch import optim
 
 
 # FLAGS

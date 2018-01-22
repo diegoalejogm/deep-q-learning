@@ -46,11 +46,11 @@ class ReplayMemory():
         '''
         This operation adds a new experience e, replacing the earliest experience if full.
         '''
-        self.phi_t[self.index] = experience[0].data.numpy()
+        self.phi_t[self.index] = experience[0].data.cpu().numpy()
         # print(self.phi_t[self.index])
         self.action[self.index] = experience[1]
         self.reward[self.index] = experience[2]
-        self.phi_t_plus1[self.index] = experience[3].data.numpy()
+        self.phi_t_plus1[self.index] = experience[3].data.cpu().numpy()
         self.terminates[self.index] = experience[4]
 
         # Update value of next index
@@ -68,11 +68,12 @@ class ReplayMemory():
 
         # Convert to pytorch
         if as_var:
-            phi = Variable(torch.from_numpy(phi)).float()
-            actions = Variable(torch.from_numpy(actions)).long()
-            rewards = Variable(torch.from_numpy(rewards)).float()
-            next_phi = Variable(torch.from_numpy(next_phi)).float().detach()
-            terminate = Variable(torch.from_numpy(terminate)).float()
+            phi = Variable(torch.from_numpy(phi)).float().cuda()
+            actions = Variable(torch.from_numpy(actions)).long().cuda()
+            rewards = Variable(torch.from_numpy(rewards)).float().cuda()
+            next_phi = Variable(torch.from_numpy(
+                next_phi)).float().detach().cuda()
+            terminate = Variable(torch.from_numpy(terminate)).float().cuda()
 
         # Return arrays
         return phi, actions, rewards, next_phi, terminate
@@ -114,6 +115,7 @@ class ReplayMemory():
                 '{}/phi_t_plus1.npy'.format(self.data_dir))
             self.terminates[:self.last_saved_size] = np.load(
                 '{}/terminates.npy'.format(self.data_dir))
+            print('Finished loading Memory data into Replay Memory Instance!')
         except IOError as e:
             self.__init__(self.memory_size, load_existing=False)
             print("I/O error({0}): {1}".format(e.errno, e.strerror))
