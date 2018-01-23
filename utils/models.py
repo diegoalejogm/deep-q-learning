@@ -46,11 +46,11 @@ class ReplayMemory():
         '''
         This operation adds a new experience e, replacing the earliest experience if full.
         '''
-        self.phi_t[self.index] = experience[0].data.cpu().numpy()
+        self.phi_t[self.index] = experience[0]
         # print(self.phi_t[self.index])
         self.action[self.index] = experience[1]
         self.reward[self.index] = experience[2]
-        self.phi_t_plus1[self.index] = experience[3].data.cpu().numpy()
+        self.phi_t_plus1[self.index] = experience[3]
         self.terminates[self.index] = experience[4]
 
         # Update value of next index
@@ -65,15 +65,6 @@ class ReplayMemory():
         rewards = self.reward[idxs].astype(np.float32)
         next_phi = self.phi_t_plus1[idxs].astype(np.float32)
         terminate = (self.terminates[idxs] + 0).astype(np.float32)
-
-        # Convert to pytorch
-        if as_var:
-            phi = Variable(torch.from_numpy(phi)).float().cuda()
-            actions = Variable(torch.from_numpy(actions)).long().cuda()
-            rewards = Variable(torch.from_numpy(rewards)).float().cuda()
-            next_phi = Variable(torch.from_numpy(
-                next_phi)).float().detach().cuda()
-            terminate = Variable(torch.from_numpy(terminate)).float().cuda()
 
         # Return arrays
         return phi, actions, rewards, next_phi, terminate

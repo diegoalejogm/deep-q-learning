@@ -1,4 +1,5 @@
 import numpy as np
+from utils import to_variable
 
 
 def e_greedy_action(Q, phi, env, step):
@@ -27,4 +28,5 @@ def e_greedy_action(Q, phi, env, step):
     else:
         # Otherwise select action that maximises Q(phi)
         # In other words: a_t = argmax_a Q(phi, a)
-        return Q(phi).max(1)[1].data, epsilon
+        phi = to_variable(phi).float()
+        return Q(phi).max(1)[1].data[0], epsilon

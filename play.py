@@ -20,11 +20,22 @@ def to_variable(arr):
 
 
 def greedy_action(Q, phi):
-    # Otherwise select a_t = argmax_a Q(phi, a)
+
+    epsilon = 0.0
+    # Obtain a random value in range [0,1)
+    rand = np.random.uniform()
+
     phi = to_variable(phi)
-    print(phi)
-    print(Q(phi))
-    return Q(phi).max(1)[1].data
+    # With probability e select random action a_t
+    if rand < epsilon:
+        return env.action_space.sample()
+
+    else:
+        print(Q(phi))
+        # raw_input()
+        # Otherwise select action that maximises Q(phi)
+        # In other words: a_t = argmax_a Q(phi, a)
+        return Q(phi).max(1)[1].data
 
 
 def initial_history(env):
@@ -40,10 +51,10 @@ def initial_history(env):
 env = gym.make('Pong-v0')
 H = initial_history(env)
 Q = DeepQNetwork(6)
-Q.load_state_dict(torch.load('data/models/episode_10',
-                             map_location=lambda storage, loc: storage))
+Q.load_state_dict(torch.load('data/models/episode_160'))
+# map_location=lambda storage, loc: storage))
 
-print(Q.state_dict())
+# print(Q.state_dict())
 # raw_input()
 
 while(True):

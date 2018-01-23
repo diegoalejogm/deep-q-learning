@@ -1,7 +1,6 @@
 import PIL.Image
 import numpy as np
 import torch
-from torch.autograd import Variable
 
 
 # TODO: Process only one image
@@ -25,9 +24,9 @@ def phi_map(image_list, as_var=True):
     # Return tensor of processed images
     arr = tuple_to_numpy(im_tuple)
 
-    # Convert to Variable
-    if as_var:
-        arr = Variable(torch.from_numpy(arr)).float().cuda()
+    # # Convert to Variable
+    # if as_var:
+    #     arr = Variable(torch.from_numpy(arr)).float()
     return arr
 
 

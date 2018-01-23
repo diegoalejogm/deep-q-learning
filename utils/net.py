@@ -2,7 +2,7 @@ import torch
 from torch import nn
 
 import copy
-import utils
+from utils import to_variable, make_dir
 
 
 class DeepQNetwork(nn.Module):
@@ -62,20 +62,20 @@ def Q_targets(phi_plus1_mb, r_mb, done_mb, model, gamma=0.99):
     gamma: future reward discount factor
     '''
     # Calculate Q value with given model
-    max_Q, argmax_a = model(phi_plus1_mb).max(1)
+    max_Q, argmax_a = model(to_variable(phi_plus1_mb).float()).max(1)
     max_Q = max_Q.detach()
     # Terminates = 0 if ep. teriminates at step j+1, or = 1 otherwise
-    terminates = (0 + done_mb)
-    target = r_mb + (gamma * max_Q) * (1 - terminates)
+    target = to_variable(r_mb).float() + (gamma * max_Q) * \
+        (1 - to_variable(done_mb).float())
     target = target.unsqueeze(1)
     return target
 
 
 def Q_values(model, phi_mb, action_mb):
     # Obtain Q values of minibatch
-    q_phi = model(phi_mb)
+    q_phi = model(to_variable(phi_mb).float())
     # Obtain actions matrix
-    action_mb = action_mb.unsqueeze(1)
+    action_mb = to_variable(action_mb).long().unsqueeze(1)
     # Select Q values for given actions
     q_phi = q_phi.gather(1, action_mb)
     return q_phi
@@ -105,7 +105,7 @@ def gradient_descent(y, q, optimizer):
 def save_network(model, episode, out_dir):
     out_dir = '{}/models'.format(out_dir)
     # Make Dir
-    utils.make_dir(out_dir)
+    make_dir(out_dir)
     # Save model
     torch.save(model.state_dict(), '{}/episode_{}'.format(out_dir, episode))
 
