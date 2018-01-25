@@ -48,7 +48,7 @@ Following conventions are important to understand the pseudo-code:
 - __sᵢ__: Environment/game frame at step i.
 - __T__: Maximum number of steps (time limit) that the agent has in the current episode.
 - __𝑄()__: Neural network that learns to approximate the real 'Q value' for every transition. 
-- __^𝑄\_()__: Copy of the previous neural network, which is used to calculate as the 'target values'. It is used to calculate the prediction error, and backpropagate the network. Every *C* steps it is updated as a copy of the network 𝑄.
+- __^𝑄()__: Copy of the previous neural network, which is used to calculate as the 'target values'. It is used to calculate the prediction error, and backpropagate the network. Every *C* steps it is updated as a copy of the network 𝑄.
 - __φ__: Mapping function that takes a sequence of images and transforms it into an input representation (see *input representation* above).
 - __D__: Replay memory. Contains transitions (φᵢ ̟₁ ,a,r,φᵢ ̟₂) that are randomly sampled to train the network.
 
