@@ -32,7 +32,7 @@ def read_flags():
         FLAGS.data_dir = '/output'
         FLAGS.log_dir = '/output'
         FLAGS.in_dir = ''
-        FLAGS.log_freq = 100
+        FLAGS.log_freq = 500
         FLAGS.log_console = False
         FLAGS.save_model_freq = 100
     return FLAGS
@@ -50,10 +50,10 @@ step = 0
 has_trained_model = False
 # Init training params
 params = {
-    'num_episodes': 2000,
+    'num_episodes': 4000,
     'minibatch_size': 32,
     'max_episode_length': int(10e6),  # T
-    'memory_size': int(1e6),  # N
+    'memory_size': int(4.5e5),  # N
     'history_size': 4,  # k
     'train_freq': 4,
     'target_update_freq': 10000,  # C: Target nerwork update frequency
@@ -65,7 +65,6 @@ log = Logger(log_dir=FLAGS.log_dir)
 # Initialize replay memory D to capacity N
 D = ReplayMemory(N=params['memory_size'],
                  load_existing=True, data_dir=FLAGS.in_dir)
-D.print_size()
 skip_fill_memory = D.count > 0
 # Initialize action-value function Q with random weights
 Q = DeepQNetwork(params['num_actions'])
@@ -88,6 +87,7 @@ for ep in range(params['num_episodes']):
         save_network(Q, ep, out_dir=FLAGS.data_dir)
 
     for _ in range(params['max_episode_length']):
+        # env.render(mode='human')
         # if step % 100 == 0:
         #     print 'Memory usage: %s (kb)' % resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
 

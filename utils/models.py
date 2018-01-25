@@ -10,54 +10,75 @@ from torch.autograd import Variable
 class ReplayMemory():
 
     def __init__(self, N, load_existing, data_dir, image_shape=(4, 84, 84)):
+        # Path where replay memory can be stored/loaded from
         self.data_dir = '{}/replay'.format(data_dir)
+        # Max memory size
         self.memory_size = N
+        # Shape of images
+        self.image_shape = image_shape
         # Next position in arrays to be used
         self.index = 0
+        # Number of stored elements
+        self.count = 0
 
         # One np array for each tuple element
-        self.phi_t = np.empty((N, ) + image_shape, dtype=np.float16)
-        self.action = np.empty(N, dtype=np.uint8)
-        self.reward = np.empty(N, dtype=np.integer)
-        self.phi_t_plus1 = np.empty((N, ) + image_shape, dtype=np.float16)
-        self.terminates = np.empty(N, dtype=np.bool)
+        self._init_arrays(self.memory_size)
 
-        self.count = 0
-        self.last_saved_size = 0
-
+        # Loads existing values if possible
         if load_existing:
             self.load()
 
+    def _init_arrays(self, N):
+        '''
+        Inits memory arrays as empty numpy arrays with expected shapes
+        '''
+        self.phi_t = np.empty((N, ) + self.image_shape, dtype=np.float16)
+        self.action = np.empty(N, dtype=np.uint8)
+        self.reward = np.empty(N, dtype=np.integer)
+        self.phi_t_plus1 = np.empty((N, ) + self.image_shape, dtype=np.float16)
+        self.terminates = np.empty(N, dtype=np.bool)
+
+    def _save_arrays(self, path, size):
+        '''
+        Saves slice of current memory arrays with given size into input path
+        '''
+        np.save('{}/phi_t'.format(path), self.phi_t[: size])
+        np.save('{}/action'.format(path), self.action[: size])
+        np.save('{}/reward'.format(path), self.reward[: size])
+        np.save('{}/phi_t_plus1'.format(path), self.phi_t_plus1[:size])
+        np.save('{}/terminates'.format(path), self.terminates[:size])
+
+    def _load_arrays(self, path, size):
+        '''
+        Loads memory arrays from path with input size
+        '''
+        if size > self.memory_size:
+            message = 'Stored memory size = {} is bigger than actual memory size = {}'.format(
+                size, self.memory_size)
+            raise ValueError(message)
+
+        self.phi_t[:size] = np.load('{}/phi_t.npy'.format(path))
+        self.action[:size] = np.load('{}/action.npy'.format(path))
+        self.reward[:size] = np.load('{}/reward.npy'.format(path))
+        self.phi_t_plus1[:size] = np.load('{}/phi_t_plus1.npy'.format(path))
+        self.terminates[:size] = np.load('{}/terminates.npy'.format(path))
+        self.index = size
+        self.count = size
+
     def to_dict(self, saved_size):
-
-        d = {'memory_size': self.memory_size,
-             'index': self.index,
-             'count': self.count,
-             'saved_size': saved_size
-             }
+        '''
+        Converts current replay memory into dict representation
+        '''
+        d = {
+            'saved_size': saved_size
+        }
         return d
-
-    def print_size(self):
-        print('*********')
-        print(sys.getsizeof(self.phi_t))
-        print(sys.getsizeof(self.action))
-        print(sys.getsizeof(self.reward))
-        print(sys.getsizeof(self.phi_t_plus1))
-        print(sys.getsizeof(self.terminates))
-        print('*********')
-
-    def from_dict(self, dictionary):
-        self.memory_size = dictionary['memory_size']
-        self.index = dictionary['index']
-        self.count = dictionary['count']
-        self.last_saved_size = dictionary['saved_size']
 
     def add(self, experience):
         '''
-        This operation adds a new experience e, replacing the earliest experience if full.
+        This operation adds a new experience e, replacing the earliest experience if arrays are full.
         '''
         self.phi_t[self.index] = experience[0]
-        # print(self.phi_t[self.index])
         self.action[self.index] = experience[1]
         self.reward[self.index] = experience[2]
         self.phi_t_plus1[self.index] = experience[3]
@@ -65,9 +86,13 @@ class ReplayMemory():
 
         # Update value of next index
         self.index = (self.index + 1) % self.memory_size
+        # Update the count value
         self.count = min(self.count + 1, self.memory_size)
 
-    def sample(self, size, as_var=True):
+    def sample(self, size):
+        '''
+        Samples slice of arrays with input size.
+        '''
         idxs = np.random.choice(self.count, size)
         # Obtain arrays
         phi = self.phi_t[idxs].astype(np.float32)
@@ -79,10 +104,16 @@ class ReplayMemory():
         # Return arrays
         return phi, actions, rewards, next_phi, terminate
 
-    def can_sample(self, size):
-        return self.count >= size
+    def can_sample(self, sample_size):
+        '''
+        Returns true if item count is at least as big as sample size.
+        '''
+        return self.count >= sample_size
 
     def save(self, size):
+        '''
+        Saves replay memory (attributes and arrays).
+        '''
         # Create out dir
         utils.make_dir(self.data_dir)
         print('Saving Memory data into Replay Memory Instance...')
@@ -90,40 +121,33 @@ class ReplayMemory():
         with open('{}/properties.json'.format(self.data_dir), 'w') as f:
             json.dump(self.to_dict(size), f)
         # Save arrays
-        np.save('{}/phi_t'.format(self.data_dir), self.phi_t[: size])
-        np.save('{}/action'.format(self.data_dir), self.action[: size])
-        np.save('{}/reward'.format(self.data_dir), self.reward[: size])
-        np.save('{}/phi_t_plus1'.format(self.data_dir),
-                self.phi_t_plus1[:size])
-        np.save('{}/terminates'.format(self.data_dir), self.terminates[:size])
+        self._save_arrays(self.data_dir, size)
 
     def load(self):
+        '''
+        Loads replay memory (attributes and arrays) into self, if possible.
+        '''
         # Create out dir
         utils.make_dir(self.data_dir)
         try:
             print('Loading Memory data into Replay Memory Instance...')
             # Load property list
             d = json.load(open('{}/properties.json'.format(self.data_dir)))
-            self.from_dict(d)
             # Load numpy arrays
-            self.phi_t[:self.last_saved_size] = np.load(
-                '{}/phi_t.npy'.format(self.data_dir))
-            self.action[:self.last_saved_size] = np.load(
-                '{}/action.npy'.format(self.data_dir))
-            self.reward[:self.last_saved_size] = np.load(
-                '{}/reward.npy'.format(self.data_dir))
-            self.phi_t_plus1[:self.last_saved_size] = np.load(
-                '{}/phi_t_plus1.npy'.format(self.data_dir))
-            self.terminates[:self.last_saved_size] = np.load(
-                '{}/terminates.npy'.format(self.data_dir))
+            self._load_arrays(self.data_dir, d['saved_size'])
+
             print('Finished loading Memory data into Replay Memory Instance!')
+
         except IOError as e:
             self.__init__(self.memory_size,
                           data_dir=self.data_dir, load_existing=False)
             print("I/O error({0}): {1}".format(e.errno, e.strerror))
             print("Couldn't find initial values for Replay Memory, instance init as new.")
 
-    def size(self):
+    def arrays_size(self):
+        '''
+        Returns the size in bytes of the memory's array
+        '''
         return (self.phi_t.nbytes + self.action.nbytes + self.reward.nbytes +
                 self.phi_t_plus1.nbytes + self.terminates.nbytes)
 
@@ -135,7 +159,9 @@ class History():
         self.list = []
 
     def add(self, ex):
-        # Add new element if list is not full
+        '''
+        Add new element to list if it is not full. Replaces last otherwise.
+        '''
         if len(self.list) < self.length:
             self.list.append(ex)
             return
@@ -146,10 +172,17 @@ class History():
         self.list[-1] = ex
 
     def get(self):
+        '''
+        Returns a copy of the list
+        '''
         return self.list
 
     @staticmethod
     def initial(env):
+        '''
+        Creates a new History with the first state of the input env.
+        Repeats initial state to fill list.
+        '''
         s = env.reset()[0]
         H = History()
         for _ in range(H.length):
