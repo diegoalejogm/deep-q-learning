@@ -51,8 +51,8 @@ def initial_history(env):
 env = gym.make('Pong-v0')
 H = initial_history(env)
 Q = DeepQNetwork(6)
-Q.load_state_dict(torch.load('data/models/episode_160'))
-# map_location=lambda storage, loc: storage))
+Q.load_state_dict(torch.load('data/models/episode_360.txt',
+                             map_location=lambda storage, loc: storage))
 
 # print(Q.state_dict())
 # raw_input()

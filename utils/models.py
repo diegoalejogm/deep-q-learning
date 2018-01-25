@@ -1,6 +1,7 @@
 import numpy as np
 import json
 import utils
+import sys
 
 import torch
 from torch.autograd import Variable
@@ -35,6 +36,15 @@ class ReplayMemory():
              'saved_size': saved_size
              }
         return d
+
+    def print_size(self):
+        print('*********')
+        print(sys.getsizeof(self.phi_t))
+        print(sys.getsizeof(self.action))
+        print(sys.getsizeof(self.reward))
+        print(sys.getsizeof(self.phi_t_plus1))
+        print(sys.getsizeof(self.terminates))
+        print('*********')
 
     def from_dict(self, dictionary):
         self.memory_size = dictionary['memory_size']
@@ -108,7 +118,8 @@ class ReplayMemory():
                 '{}/terminates.npy'.format(self.data_dir))
             print('Finished loading Memory data into Replay Memory Instance!')
         except IOError as e:
-            self.__init__(self.memory_size, load_existing=False)
+            self.__init__(self.memory_size,
+                          data_dir=self.data_dir, load_existing=False)
             print("I/O error({0}): {1}".format(e.errno, e.strerror))
             print("Couldn't find initial values for Replay Memory, instance init as new.")
 

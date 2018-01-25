@@ -13,11 +13,12 @@ def phi_map(image_list, as_var=True):
     im_tuple = tuple()
     for i in range(k):
         # Load single image as PIL and convert to Luminance
-        im = PIL.Image.fromarray(image_list[i]).convert('L')
+        pil_im = PIL.Image.fromarray(image_list[i]).convert('L')
         # Resize image
-        im = im.resize((84, 84), PIL.Image.ANTIALIAS)
+        pil_im = pil_im.resize((84, 84), PIL.Image.ANTIALIAS)
         # Transform to numpy array
-        im = np.array(im) / 255.
+        im = np.array(pil_im) / 255.
+        pil_im.close()
         # Add processed image to tuple
         im_tuple += (im,)
 
