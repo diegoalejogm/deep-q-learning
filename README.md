@@ -1,6 +1,6 @@
 # deep-q-learning
 
-Implementation of Deep Q Learning algorithm in the Atari environments, as publicized by Google Deepmind in their famous research paper.
+Implementation of Deep Q Learning algorithm in the Atari environments, as publicized by Google Deepmind in [their famous research paper](https://storage.googleapis.com/deepmind-data/assets/papers/DeepMindNature14236Paper.pdf).
 
 ## Algorithm
 
