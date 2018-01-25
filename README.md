@@ -1,6 +1,6 @@
 # deep-q-learning
 
-PyTorch omplementation of DeepMind's **_Human-level control through deep reinforcement learning_** paper [link](https://storage.googleapis.com/deepmind-data/assets/papers/DeepMindNature14236Paper.pdf).
+PyTorch omplementation of DeepMind's **_Human-level control through deep reinforcement learning_** paper [(link)](https://storage.googleapis.com/deepmind-data/assets/papers/DeepMindNature14236Paper.pdf).
 
 <img src=".assets/net.png" width="800">
 
@@ -17,15 +17,15 @@ The proposed implementation is found in this repository. Also, this _readme_ fil
 
 ### Input Representation
 
-1. Each image frame in RGB is converted into it's [luminosity's representation] (https://stackoverflow.com/questions/596216/formula-to-determine-brightness-of-rgb-color), which reduces it to 2-dimensions.
+1. Each image frame in RGB is converted into it's [luminosity's representation](https://stackoverflow.com/questions/596216/formula-to-determine-brightness-of-rgb-color), which reduces it to 2-dimensions.
 2. Resulting images are rezised into a square image with size 84 x 84.
 3. The tensor containing a sequence of the last 4 processed frames is used as input for the Deep Convolutional Neural Network. Such tensor has size (4 x 84 x 84).
 
 ### Neural Network
-1. The neural network contains a sequence of convolutional layers, each followed by a [Rectifier Linear Unit (ReLU)](https://en.wikipedia.org/wiki/Rectifier_(neural_networks)) layer.
-2. The output of the last hidden layer is flattened into a 1-Dimensional vector, which is used as the first layer of a fully-connected neural network.
-3. The first layer of the fully-connected network is connected to a single hidden layer, with an additional ReLU.
-4. The output layer has multiple outputs, each one for each possible action that the agent has.
+1. The neural network contains a sequence of **three convolutional layers**, each followed by a [Rectifier Linear Unit (ReLU)](https://en.wikipedia.org/wiki/Rectifier_(neural_networks)) layer.
+2. The **output** of the last hidden layer is **flattened into a 1-dimensional** vector, which is used as the first layer of a fully-connected neural network.
+3. The **first layer** of the fully-connected network is connected to a single hidden layer, with an additional ReLU.
+4. The **output layer** has multiple outputs, each one for each possible action that the agent has.
 
 
 ## Algorithm
@@ -34,7 +34,18 @@ The proposed implementation is found in this repository. Also, this _readme_ fil
 
 Pseudocode for the Q-Learning algorithm which uses the previously mentioned model is presented next.
 
-<img src=".assets/pseudocode.png" width="700">
+Following conventions are important to understand the pseudo-code:
+
+- __M__: Number of episodes to train the learning agent.
+- __sᵢ__: Environment/game frame at step i.
+- __T__: Maximum number of steps (time limit) that the agent has in the current episode.
+- __𝑄()__: Neural network that learns to approximate the real 'Q value' for every transition. 
+- __^𝑄\_()__: Copy of the previous neural network, which is used to calculate as the 'target values'. It is used to calculate the prediction error, and backpropagate the network. Every *C* steps it is updated as a copy of the network 𝑄.
+- __φ__: Mapping function that takes a sequence of images and transforms it into an input representation (see *input representation* above).
+
+**Pseudo-code:**
+
+<img src=".assets/pseudocode.png" width="600">
 
 
 ## Code
