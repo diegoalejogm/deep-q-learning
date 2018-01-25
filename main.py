@@ -53,7 +53,7 @@ params = {
     'num_episodes': 2000,
     'minibatch_size': 32,
     'max_episode_length': int(10e6),  # T
-    'memory_size': int(1e6)  # N
+    'memory_size': int(1e6),  # N
     'history_size': 4,  # k
     'train_freq': 4,
     'target_update_freq': 10000,  # C: Target nerwork update frequency
@@ -65,6 +65,7 @@ log = Logger(log_dir=FLAGS.log_dir)
 # Initialize replay memory D to capacity N
 D = ReplayMemory(N=params['memory_size'],
                  load_existing=True, data_dir=FLAGS.in_dir)
+D.print_size()
 skip_fill_memory = D.count > 0
 # Initialize action-value function Q with random weights
 Q = DeepQNetwork(params['num_actions'])
