@@ -1,6 +1,6 @@
 # deep-q-learning
 
-PyTorch omplementation of DeepMind's **_Human-level control through deep reinforcement learning_** paper [(link)](https://storage.googleapis.com/deepmind-data/assets/papers/DeepMindNature14236Paper.pdf).
+PyTorch implementation of DeepMind's **_Human-level control through deep reinforcement learning_** paper [(link)](https://storage.googleapis.com/deepmind-data/assets/papers/DeepMindNature14236Paper.pdf).
 
 <img src=".assets/net.png" width="800">
 
