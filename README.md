@@ -17,7 +17,7 @@ The proposed implementation is found in this repository. Also, this _readme_ fil
 
 ### Input Representation
 
-1. Each image frame in RGB is converted into it's [luminosity's representation](https://stackoverflow.com/questions/596216/formula-to-determine-brightness-of-rgb-color), which reduces it to 2-dimensions.
+1. Each image frame in RGB is converted into it's [luminosity's representation](https://stackoverflow.com/questions/596216/formula-to-determine-brightness-of-rgb-color), which has one channel instead of three.
 2. Resulting images are rezised into a square image with size 84 x 84.
 3. The tensor containing a sequence of the last 4 processed frames is used as input for the Deep Convolutional Neural Network. Such tensor has size (4 x 84 x 84).
 
