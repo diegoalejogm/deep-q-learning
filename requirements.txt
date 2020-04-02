@@ -1,5 +1,6 @@
 jupyter==1.0.0
 gym[atari]==0.9.4
-numpy==1.13.3
-tensorflow==1.0.0
-torch==0.3.0.post4
+numpy==1.18.2
+tensorflow==1.15.2
+torch==1.4.0
+tensorboardX==1.9
